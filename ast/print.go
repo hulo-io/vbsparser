@@ -42,9 +42,9 @@ func (p *printer) Visit(node Node) Visitor {
 		}
 
 	case *DimDecl:
-		p.printf("%s %s", p.ident+"Dim", exprListStr(n.List))
+		p.printf("%s %s", p.ident+"Dim", ExprListStr(n.List))
 		if n.Colon.IsValid() {
-			p.printf(": Set %s = %s", exprStr(n.Set.Lhs), exprStr(n.Set.Rhs))
+			p.printf(": Set %s = %s", ExprStr(n.Set.Lhs), ExprStr(n.Set.Rhs))
 		}
 		p.println()
 
@@ -53,13 +53,13 @@ func (p *printer) Visit(node Node) Visitor {
 		if n.Preserve.IsValid() {
 			p.print("Preserve ")
 		}
-		p.println(exprListStr(n.List))
+		p.println(ExprListStr(n.List))
 
 	case *ClassDecl:
 		if n.Mod.HasPublic() {
 			p.print(p.ident + "Public ")
 		}
-		p.printf(p.ident+"Class %s\n", exprStr(n.Name))
+		p.printf(p.ident+"Class %s\n", ExprStr(n.Name))
 
 		temp := p.ident
 		p.ident += "  "
@@ -80,7 +80,7 @@ func (p *printer) Visit(node Node) Visitor {
 			p.print(p.ident + "Public ")
 			ident = ""
 		}
-		p.printf(ident+"Sub %s\n", exprStr(n.Name))
+		p.printf(ident+"Sub %s\n", ExprStr(n.Name))
 
 		for _, s := range n.Body.List {
 			temp := p.ident
@@ -105,7 +105,7 @@ func (p *printer) Visit(node Node) Visitor {
 				list = append(list, r.Name.Name)
 			}
 		}
-		p.printf(ident+"Function %s(%s)\n", exprStr(n.Name), strings.Join(list, ", "))
+		p.printf(ident+"Function %s(%s)\n", ExprStr(n.Name), strings.Join(list, ", "))
 
 		for _, s := range n.Body.List {
 			temp := p.ident
@@ -130,7 +130,7 @@ func (p *printer) Visit(node Node) Visitor {
 				list = append(list, r.Name.Name)
 			}
 		}
-		p.printf(ident+"Property %s %s(%s)\n", n.Tok, exprStr(n.Name), strings.Join(list, ", "))
+		p.printf(ident+"Property %s %s(%s)\n", n.Tok, ExprStr(n.Name), strings.Join(list, ", "))
 
 		for _, s := range n.Body.List {
 			temp := p.ident
@@ -142,7 +142,7 @@ func (p *printer) Visit(node Node) Visitor {
 		p.println(p.ident + "End Property")
 
 	case *IfStmt:
-		p.printf(p.ident+"If %s Then\n", exprStr(n.Cond))
+		p.printf(p.ident+"If %s Then\n", ExprStr(n.Cond))
 
 		for _, s := range n.Body.List {
 			temp := p.ident
@@ -153,7 +153,7 @@ func (p *printer) Visit(node Node) Visitor {
 
 		if n.ElseIf != nil {
 			for _, elif := range n.ElseIf {
-				p.println(p.ident+"ElseIf", exprStr(elif.Cond), "Then")
+				p.println(p.ident+"ElseIf", ExprStr(elif.Cond), "Then")
 				for _, s := range elif.Body.List {
 					temp := p.ident
 					p.ident += "  "
@@ -176,7 +176,7 @@ func (p *printer) Visit(node Node) Visitor {
 		p.println(p.ident + "End If")
 
 	case *ExprStmt:
-		p.printf(p.ident+"%s\n", exprStr(n.X))
+		p.printf(p.ident+"%s\n", ExprStr(n.X))
 
 	case *MemberStmt:
 		if n.Mod.HasPublic() {
@@ -185,7 +185,7 @@ func (p *printer) Visit(node Node) Visitor {
 		if n.Mod.HasPrivate() {
 			p.print(p.ident + "Private ")
 		}
-		p.println(exprStr(n.Name))
+		p.println(ExprStr(n.Name))
 
 	case *AssignStmt:
 		modifier := ""
@@ -195,10 +195,10 @@ func (p *printer) Visit(node Node) Visitor {
 		case token.CONST:
 			modifier = "Const "
 		}
-		p.printf(p.ident+"%s%s = %s\n", modifier, exprStr(n.Lhs), exprStr(n.Rhs))
+		p.printf(p.ident+"%s%s = %s\n", modifier, ExprStr(n.Lhs), ExprStr(n.Rhs))
 
 	case *ForEachStmt:
-		p.printf(p.ident+"For Each %s In %s\n", exprStr(n.Elem), exprStr(n.Group))
+		p.printf(p.ident+"For Each %s In %s\n", ExprStr(n.Elem), ExprStr(n.Group))
 		for _, s := range n.Body.List {
 			temp := p.ident
 			p.ident += "  "
@@ -214,9 +214,9 @@ func (p *printer) Visit(node Node) Visitor {
 		}
 
 	case *ForNextStmt:
-		p.printf(p.ident+"For %s To %s", exprStr(n.Start), exprStr(n.End_))
+		p.printf(p.ident+"For %s To %s", ExprStr(n.Start), ExprStr(n.End_))
 		if n.Step != nil {
-			p.printf(" Step %s\n", exprStr(n.Step))
+			p.printf(" Step %s\n", ExprStr(n.Step))
 		}
 		for _, s := range n.Body.List {
 			temp := p.ident
@@ -227,7 +227,7 @@ func (p *printer) Visit(node Node) Visitor {
 		p.println(p.ident + "Next")
 
 	case *WhileWendStmt:
-		p.printf(p.ident+"While %s\n", exprStr(n.Cond))
+		p.printf(p.ident+"While %s\n", ExprStr(n.Cond))
 		for _, s := range n.Body.List {
 			temp := p.ident
 			p.ident += "  "
@@ -239,7 +239,7 @@ func (p *printer) Visit(node Node) Visitor {
 	case *DoLoopStmt:
 
 	case *CallStmt:
-		p.printf(p.ident+"Call %s %s\n", exprStr(n.Name), exprListStr(n.Recv))
+		p.printf(p.ident+"Call %s %s\n", ExprStr(n.Name), ExprListStr(n.Recv))
 
 	case *ExitStmt:
 		if len(n.X) == 0 {
@@ -249,9 +249,9 @@ func (p *printer) Visit(node Node) Visitor {
 		}
 
 	case *SelectStmt:
-		p.printf(p.ident+"Select Case %s\n", exprStr(n.Var))
+		p.printf(p.ident+"Select Case %s\n", ExprStr(n.Var))
 		for _, c := range n.Cases {
-			p.printf(p.ident+"  Case %s\n", exprStr(c.Cond))
+			p.printf(p.ident+"  Case %s\n", ExprStr(c.Cond))
 			for _, s := range c.Body.List {
 				temp := p.ident
 				p.ident += "    "
@@ -271,7 +271,7 @@ func (p *printer) Visit(node Node) Visitor {
 		p.println(p.ident + "End Select")
 
 	case *WithStmt:
-		p.printf(p.ident+"With %s\n", exprStr(n.Cond))
+		p.printf(p.ident+"With %s\n", ExprStr(n.Cond))
 		for _, s := range n.Body.List {
 			temp := p.ident
 			p.ident += "  "
@@ -307,7 +307,7 @@ func String(node Node) string {
 	return buf.String()
 }
 
-func exprStr(e Expr) string {
+func ExprStr(e Expr) string {
 	switch e := e.(type) {
 	case *Ident:
 		return e.Name
@@ -317,23 +317,23 @@ func exprStr(e Expr) string {
 		}
 		return e.Value
 	case *SelectorExpr:
-		return fmt.Sprintf("%s.%s", exprStr(e.X), exprStr(e.Sel))
+		return fmt.Sprintf("%s.%s", ExprStr(e.X), ExprStr(e.Sel))
 	case *BinaryExpr:
-		return fmt.Sprintf("%s %s %s", exprStr(e.X), e.Op, exprStr(e.Y))
+		return fmt.Sprintf("%s %s %s", ExprStr(e.X), e.Op, ExprStr(e.Y))
 	case *CallExpr:
-		return fmt.Sprintf("%s(%s)", exprStr(e.Func), exprListStr(e.Recv))
+		return fmt.Sprintf("%s(%s)", ExprStr(e.Func), ExprListStr(e.Recv))
 	case *IndexExpr:
-		return fmt.Sprintf("%s(%s)", exprStr(e.X), exprStr(e.Index))
+		return fmt.Sprintf("%s(%s)", ExprStr(e.X), ExprStr(e.Index))
 	case *IndexListExpr:
-		return fmt.Sprintf("%s(%s)", exprStr(e.X), exprListStr(e.Indices))
+		return fmt.Sprintf("%s(%s)", ExprStr(e.X), ExprListStr(e.Indices))
 	}
 	return ""
 }
 
-func exprListStr(list []Expr) string {
+func ExprListStr(list []Expr) string {
 	res := []string{}
 	for _, e := range list {
-		res = append(res, exprStr(e))
+		res = append(res, ExprStr(e))
 	}
 	return strings.Join(res, ", ")
 }
