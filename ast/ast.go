@@ -29,11 +29,17 @@ type CommentGroup struct {
 	List []*Comment
 }
 
+func (g *CommentGroup) Pos() token.Pos { return g.List[0].Pos() }
+func (g *CommentGroup) End() token.Pos { return g.List[len(g.List)-1].End() }
+
 type Comment struct {
 	TokPos token.Pos
 	Tok    token.Token // ' or Rem
 	Text   string
 }
+
+func (c *Comment) Pos() token.Pos { return c.TokPos }
+func (c *Comment) End() token.Pos { return token.Pos(int(c.TokPos) + len(c.Text)) }
 
 type Modifier int
 
@@ -113,15 +119,17 @@ type (
 
 	// A DimDecl node represents an dim declaration.
 	DimDecl struct {
-		Dim  token.Pos // position of "Dim"
-		Vars []Expr
+		Dim   token.Pos // position of "Dim"
+		List  []Expr
+		Colon token.Pos // position of ":"
+		Set   *AssignStmt
 	}
 
 	// A ReDimDecl node represents a redim declaration.
 	ReDimDecl struct {
 		ReDim    token.Pos // position of "ReDim"
 		Preserve token.Pos // position of "Preserve"
-		Vars     []Expr
+		List     []Expr
 	}
 )
 
@@ -168,8 +176,8 @@ func (d *SubDecl) End() token.Pos      { return d.EndSub }
 func (d *PropertyDecl) End() token.Pos { return d.EndProverty }
 func (d *FuncDecl) End() token.Pos     { return d.EndFunc }
 func (d *ClassDecl) End() token.Pos    { return d.EndClass }
-func (d *DimDecl) End() token.Pos      { return d.Vars[len(d.Vars)-1].End() }
-func (d *ReDimDecl) End() token.Pos    { return d.Vars[len(d.Vars)-1].End() }
+func (d *DimDecl) End() token.Pos      { return d.List[len(d.List)-1].End() }
+func (d *ReDimDecl) End() token.Pos    { return d.List[len(d.List)-1].End() }
 
 func (*SubDecl) declNode()      {}
 func (*PropertyDecl) declNode() {}
@@ -202,6 +210,7 @@ type (
 	// A WithStmt node represents a with statement.
 	WithStmt struct {
 		With    token.Pos // position of "With"
+		Cond    Expr
 		Body    *BlockStmt
 		EndWith token.Pos // position of "End With"
 	}
@@ -225,6 +234,7 @@ type (
 		Select    token.Pos // position of "Select"
 		Var       Expr
 		Cases     []*CaseStmt
+		Else      *CaseStmt
 		EndSelect token.Pos // position of "End Select"
 	}
 
@@ -241,8 +251,8 @@ type (
 		Cond   Expr
 		Then   token.Pos // position of "Then"
 		Body   *BlockStmt
-		ElseIf []Stmt
-		Else   Stmt
+		ElseIf []*IfStmt
+		Else   *BlockStmt
 		EndIf  token.Pos // position of "End If"
 	}
 
@@ -255,6 +265,7 @@ type (
 	CallStmt struct {
 		Call token.Pos // position of "Call"
 		Name *Ident
+		Recv []Expr
 	}
 
 	// An ExitStmt node represents an exit statement.
@@ -327,7 +338,7 @@ type (
 	MemberStmt struct {
 		Mod    Modifier // public or private
 		ModPos token.Pos
-		Field  *Field
+		Name   *Ident
 	}
 
 	// An ExprStmt node represents a (stand-alone) expression
@@ -347,8 +358,9 @@ func (s *AssignStmt) Pos() token.Pos {
 	}
 	return s.Lhs.Pos()
 }
-func (s *StopStmt) Pos() token.Pos { return s.Stop }
-func (s *IfStmt) Pos() token.Pos   { return s.If }
+func (s *StopStmt) Pos() token.Pos   { return s.Stop }
+func (s *SelectStmt) Pos() token.Pos { return s.Select }
+func (s *IfStmt) Pos() token.Pos     { return s.If }
 func (s *BlockStmt) Pos() token.Pos {
 	if len(s.List) > 0 {
 		return s.List[0].Pos()
@@ -366,10 +378,7 @@ func (s *MemberStmt) Pos() token.Pos {
 	if !s.Mod.IsNone() {
 		return s.ModPos
 	}
-	if s.Field.TokPos.IsValid() {
-		return s.Field.TokPos
-	}
-	return token.NoPos
+	return s.Name.End()
 }
 func (s *ExprStmt) Pos() token.Pos { return s.X.Pos() }
 
@@ -386,7 +395,12 @@ func (s *BlockStmt) End() token.Pos {
 	}
 	return token.NoPos
 }
-func (s *CallStmt) End() token.Pos    { return s.Name.End() }
+func (s *CallStmt) End() token.Pos {
+	if len(s.Recv) > 0 {
+		return s.Recv[len(s.Recv)-1].End()
+	}
+	return s.Name.End()
+}
 func (s *ExitStmt) End() token.Pos    { return token.Pos(int(s.Exit) + len(s.X)) }
 func (s *ForNextStmt) End() token.Pos { return s.Next }
 func (s *ForEachStmt) End() token.Pos {
@@ -406,7 +420,7 @@ func (s *OnErrorStmt) End() token.Pos {
 	}
 	return token.NoPos
 }
-func (s *MemberStmt) End() token.Pos { return s.Field.Name.End() }
+func (s *MemberStmt) End() token.Pos { return s.Name.Pos() }
 func (s *ExprStmt) End() token.Pos   { return s.X.End() }
 
 func (*OptionStmt) stmtNode()    {}
@@ -530,8 +544,6 @@ type File struct {
 	Stmts []Stmt
 	Decls []Decl
 }
-
-func (*File) declNode() {}
 
 func (*File) Pos() token.Pos { return token.NoPos }
 func (*File) End() token.Pos { return token.NoPos }
