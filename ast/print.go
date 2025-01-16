@@ -34,11 +34,12 @@ func (p *printer) println(a ...any) (n int, err error) {
 func (p *printer) Visit(node Node) Visitor {
 	switch n := node.(type) {
 	case *File:
-		for _, s := range n.Stmts {
-			Walk(p, s)
-		}
 		for _, d := range n.Decls {
 			Walk(p, d)
+		}
+
+		for _, s := range n.Stmts {
+			Walk(p, s)
 		}
 
 	case *DimDecl:
@@ -237,6 +238,25 @@ func (p *printer) Visit(node Node) Visitor {
 		p.println(p.ident + "Wend")
 
 	case *DoLoopStmt:
+		if n.Pre {
+			p.printf(p.ident+"Do %s %s\n", n.Tok, ExprStr(n.Cond))
+			for _, s := range n.Body.List {
+				temp := p.ident
+				p.ident += "  "
+				Walk(p, s)
+				p.ident = temp
+			}
+			p.println(p.ident + "Loop")
+		} else {
+			p.printf(p.ident + "Do\n")
+			for _, s := range n.Body.List {
+				temp := p.ident
+				p.ident += "  "
+				Walk(p, s)
+				p.ident = temp
+			}
+			p.printf(p.ident+"Loop %s %s\n", n.Tok, ExprStr(n.Cond))
+		}
 
 	case *CallStmt:
 		p.printf(p.ident+"Call %s %s\n", ExprStr(n.Name), ExprListStr(n.Recv))
